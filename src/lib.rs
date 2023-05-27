@@ -98,7 +98,6 @@ impl RegExpr {
                 // the line. Take note of the matched word starting index and continue
                 // matching.
                 match_indices.push(indx_l - indx_p);
-                dbg!(&match_indices);
                 indx_p = 0;
             }
         }
