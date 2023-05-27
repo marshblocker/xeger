@@ -43,7 +43,7 @@ impl RegExpr {
             }
         }
 
-        if matched_lines.len() > 0 {
+        if !matched_lines.is_empty() {
             MatchResult::Found(matched_lines)
         } else {
             MatchResult::NotFound
@@ -66,7 +66,7 @@ impl RegExpr {
             }
         }
 
-        if matched_lines.len() > 0 {
+        if !matched_lines.is_empty() {
             MatchResult::Found(matched_lines)
         } else {
             MatchResult::NotFound
@@ -102,7 +102,7 @@ impl RegExpr {
             }
         }
 
-        if match_indices.len() > 0 {
+        if !match_indices.is_empty() {
             Some(LineMatch {
                 line: line.to_string(),
                 lineno,
