@@ -10,7 +10,14 @@ pub struct RegExpr {
 pub struct LineMatch {
     line: String,
     lineno: u32,
-    match_indices: Vec<usize>,
+    matches: Vec<MatchInstance>,
+}
+
+/// [start_indx, end_indx]
+#[derive(PartialEq, Debug)]
+pub struct MatchInstance {
+    start_indx: usize,
+    end_indx: usize,
 }
 
 #[derive(Debug, PartialEq)]
@@ -18,6 +25,15 @@ pub enum MatchResult {
     Found(Vec<LineMatch>),
     NotFound,
     Error(String),
+}
+
+impl MatchInstance {
+    pub fn new(start_indx: usize, end_indx: usize) -> Self {
+        Self {
+            start_indx,
+            end_indx,
+        }
+    }
 }
 
 impl RegExpr {
@@ -74,7 +90,7 @@ impl RegExpr {
     }
 
     fn match_line(&self, line: &str, lineno: u32) -> Option<LineMatch> {
-        let mut match_indices: Vec<usize> = Vec::new();
+        let mut matches: Vec<MatchInstance> = Vec::new();
         let line_chars = line.chars().collect::<Vec<char>>();
 
         let mut indx_l: usize = 0; // line index
@@ -97,16 +113,20 @@ impl RegExpr {
                 // Successfully matched pattern to a substring of
                 // the line. Take note of the matched word starting index and continue
                 // matching.
-                match_indices.push(indx_l - indx_p);
+                let match_start = indx_l - indx_p;
+                matches.push(MatchInstance::new(
+                    match_start,
+                    match_start + self.pattern.len() - 1,
+                ));
                 indx_p = 0;
             }
         }
 
-        if !match_indices.is_empty() {
+        if !matches.is_empty() {
             Some(LineMatch {
                 line: line.to_string(),
                 lineno,
-                match_indices,
+                matches,
             })
         } else {
             None
@@ -138,7 +158,7 @@ mod tests {
             MatchResult::Found(vec![LineMatch {
                 line: buf.to_string(),
                 lineno: 1,
-                match_indices: vec![1]
+                matches: vec![MatchInstance::new(1, 3)]
             }])
         );
     }
@@ -155,17 +175,21 @@ mod tests {
                 LineMatch {
                     line: buf.split("\n").next().unwrap().to_string(),
                     lineno: 1,
-                    match_indices: vec![0, 4]
+                    matches: vec![MatchInstance::new(0, 2), MatchInstance::new(4, 6)]
                 },
                 LineMatch {
                     line: buf.split("\n").nth(1).unwrap().to_string(),
                     lineno: 2,
-                    match_indices: vec![4]
+                    matches: vec![MatchInstance::new(4, 6)]
                 },
                 LineMatch {
                     line: buf.split("\n").last().unwrap().to_string(),
                     lineno: 3,
-                    match_indices: vec![2, 5, 8]
+                    matches: vec![
+                        MatchInstance::new(2, 4),
+                        MatchInstance::new(5, 7),
+                        MatchInstance::new(8, 10)
+                    ]
                 }
             ])
         );
