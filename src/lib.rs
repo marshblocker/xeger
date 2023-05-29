@@ -134,6 +134,44 @@ impl RegExpr {
     }
 }
 
+pub fn print_matched_lines(matched_lines: &Vec<LineMatch>) {
+    let matched_lines_display = get_matched_lines_display(matched_lines);
+    matched_lines_display
+        .into_iter()
+        .for_each(|s| println!("{}", s));
+}
+
+fn get_matched_lines_display(matched_lines: &Vec<LineMatch>) -> Vec<String> {
+    let mut matched_lines_display: Vec<String> = Vec::new();
+
+    for matched_line in matched_lines {
+        let mut matched_line_display: Vec<String> = Vec::new();
+
+        let mut start: usize;
+        let mut end = 0;
+        let mut prev_end: usize;
+        for i in 0..matched_line.matches.len() {
+            prev_end = if i == 0 { 0 } else { end };
+
+            start = matched_line.matches[i].start_indx;
+            end = matched_line.matches[i].end_indx;
+
+            if i == 0 {
+                matched_line_display.push(format!("{}", &matched_line.line[prev_end..start]));
+                matched_line_display.push(format!("<{}>", &matched_line.line[start..=end]));
+            } else {
+                matched_line_display.push(format!("{}", &matched_line.line[prev_end + 1..start]));
+                matched_line_display.push(format!("<{}>", &matched_line.line[start..=end]));
+            }
+        }
+
+        matched_line_display.push(format!("{}", &matched_line.line[end + 1..]));
+        matched_lines_display.push(matched_line_display.join(""));
+    }
+
+    matched_lines_display
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -193,5 +231,50 @@ mod tests {
                 }
             ])
         );
+    }
+
+    #[test]
+    fn get_matched_lines_display_one_line() {
+        let buf = "ffoof";
+        let pattern = "foo";
+
+        let re = RegExpr::new(pattern);
+        let res = re.match_buf(buf);
+        if let MatchResult::Found(matched_lines) = res {
+            assert_eq!(get_matched_lines_display(&matched_lines), vec!["f<foo>f"]);
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn get_matched_lines_display_one_line_many() {
+        let buf = "fooffoofofoo";
+        let pattern = "foo";
+
+        let re = RegExpr::new(pattern);
+        let res = re.match_buf(buf);
+        if let MatchResult::Found(matched_lines) = res {
+            assert_eq!(
+                get_matched_lines_display(&matched_lines),
+                vec!["<foo>f<foo>fo<foo>"]
+            );
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn get_matched_lines_display_many_lines_match_some_only() {
+        let buf = "bar\nfoo";
+        let pattern = "foo";
+
+        let re = RegExpr::new(pattern);
+        let res = re.match_buf(buf);
+        if let MatchResult::Found(matched_lines) = res {
+            assert_eq!(get_matched_lines_display(&matched_lines), vec!["<foo>"]);
+        } else {
+            assert!(false);
+        }
     }
 }
